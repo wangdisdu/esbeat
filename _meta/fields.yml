@@ -1,0 +1,9 @@
+- key: esbeat
+  title: esbeat
+  description:
+  fields:
+    - name: counter
+      type: long
+      required: true
+      description: >
+        PLEASE UPDATE DOCUMENTATION

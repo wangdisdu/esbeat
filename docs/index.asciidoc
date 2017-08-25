@@ -1,0 +1,5 @@
+= Esbeat Docs
+
+Welcome to the Esbeat documentation.
+
+
