@@ -4,9 +4,10 @@
 
 esbeat:
   # Defines how often an event is sent to the output
-  period: 1s
-  hosts: ["localhost:9200"]
+  period: 5s
+  hosts: ["192.168.31.130:9201", "192.168.31.130:9202", "192.168.31.130:9200", "localhost:9200"]
   #protocol: "http"
+  timeout: 1s
   #username: "elastic"
   #password: "changeme"
   #stats:["nodes","nodes_stats"]

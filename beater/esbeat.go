@@ -2,6 +2,7 @@ package beater
 
 import (
 	"fmt"
+	"net/url"
 	"time"
 
 	"github.com/elastic/beats/libbeat/beat"
@@ -16,6 +17,7 @@ type Esbeat struct {
 	done   chan struct{}
 	config config.Config
 	client publisher.Client
+	urls   []*url.URL
 }
 
 // Creates beater
@@ -29,6 +31,18 @@ func New(b *beat.Beat, cfg *common.Config) (beat.Beater, error) {
 		done:   make(chan struct{}),
 		config: config,
 	}
+
+	bt.urls = make([]*url.URL, len(config.Hosts))
+	for i := 0; i < len(config.Hosts); i++ {
+		host := fmt.Sprintf("%s://%s", config.Protocol, config.Hosts[i])
+		u, err := url.Parse(host)
+		if err != nil {
+			logp.Err("Invalid ElasticSearch Host: %v", err)
+			return nil, err
+		}
+		bt.urls[i] = u
+	}
+
 	return bt, nil
 }
 
@@ -43,6 +57,11 @@ func (bt *Esbeat) Run(b *beat.Beat) error {
 		case <-bt.done:
 			return nil
 		case <-ticker.C:
+		}
+
+		_, err := bt.GetNodesHttpAddress()
+		if err != nil {
+			fmt.Println("error:", err)
 		}
 
 		event := common.MapStr{
