@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	NODES_LOCAL_HTTP = "/_nodes/_local"
+	NODES_LOCAL_PATH = "/_nodes/_local"
 )
 
 type NodeBody struct {
@@ -43,8 +43,9 @@ type NodeInfo struct {
 	} `json:"jvm"`
 }
 
-func FetchNode(http *helper.HTTP, url *url.URL) (interface{}, error) {
-	uri := strings.TrimSuffix(url.String(), "/") + NODES_LOCAL_HTTP
+// fetch "http://hostname:port/_nodes/_local" into NodeInfo
+func FetchNode(http *helper.HTTP, host *url.URL) (interface{}, error) {
+	uri := strings.TrimSuffix(host.String(), "/") + NODES_LOCAL_PATH
 	nodeBody := NodeBody{}
 
 	body, err := http.FetchContent(uri)

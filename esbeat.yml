@@ -5,12 +5,20 @@
 esbeat:
   # Defines how often an event is sent to the output
   period: 5s
+  # List of hosts with port to elasticsearch.
+  # Defaults to ["127.0.0.1:9200"].
   hosts: ["192.168.31.130:9201", "192.168.31.130:9202", "192.168.31.130:9200", "localhost:9200"]
-  #protocol: "http"
+  protocol: "http"
   timeout: 1s
+  # Statistics to collect
+  stats:
+    node: true
+    nodestats: true
+    clusterhealth: true
+    clusterstats: true
   #username: "elastic"
   #password: "changeme"
-  #stats:["nodes","nodes_stats"]
+  
 
 #================================ General =====================================
 

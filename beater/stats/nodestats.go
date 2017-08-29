@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	NODES_LOCAL_STATS = "/_nodes/_local/stats"
+	NODES_LOCAL_STATS_PATH = "/_nodes/_local/stats"
 )
 
 type NodeStatsBody struct {
@@ -248,8 +248,9 @@ type NodeStatsInfo struct {
 	} `json:"http"`
 }
 
-func FetchNodeStats(http *helper.HTTP, url *url.URL) (interface{}, error) {
-	uri := strings.TrimSuffix(url.String(), "/") + NODES_LOCAL_STATS
+// fetch "http://hostname:port/_nodes/_local/stats" into NodeStatsInfo
+func FetchNodeStats(http *helper.HTTP, host *url.URL) (interface{}, error) {
+	uri := strings.TrimSuffix(host.String(), "/") + NODES_LOCAL_STATS_PATH
 	nodeBody := NodeStatsBody{}
 
 	body, err := http.FetchContent(uri)

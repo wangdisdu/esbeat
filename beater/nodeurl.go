@@ -29,6 +29,7 @@ type NodeUrl struct {
 	Url         *url.URL
 }
 
+// get all http address published by node in cluster
 func (bt *Esbeat) GetNodeUrls() ([]NodeUrl, error) {
 	http := helper.NewHTTP(bt.config)
 

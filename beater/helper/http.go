@@ -1,7 +1,6 @@
 package helper
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/wangdisdu/esbeat/config"
 	"io/ioutil"
@@ -13,6 +12,7 @@ type HTTP struct {
 	config config.Config
 }
 
+// You can share it in diffrent instance
 func NewHTTP(cfg config.Config) *HTTP {
 	client := &http.Client{
 		Timeout: cfg.Timeout,
@@ -44,6 +44,7 @@ func (h *HTTP) FetchResponse(url string) (*http.Response, error) {
 }
 
 // FetchResponse fetches a array of byte for the http request.
+// It will return error when http response code is any else 200.
 func (h *HTTP) FetchContent(url string) ([]byte, error) {
 	resp, err := h.FetchResponse(url)
 	if err != nil {
@@ -56,20 +57,4 @@ func (h *HTTP) FetchContent(url string) ([]byte, error) {
 	}
 
 	return ioutil.ReadAll(resp.Body)
-}
-
-func (h *HTTP) FetchJSON(url string) (map[string]interface{}, error) {
-	body, err := h.FetchContent(url)
-	if err != nil {
-		return nil, err
-	}
-
-	var data map[string]interface{}
-
-	err = json.Unmarshal(body, &data)
-	if err != nil {
-		return nil, err
-	}
-
-	return data, nil
 }

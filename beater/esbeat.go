@@ -58,15 +58,42 @@ func (bt *Esbeat) Run(b *beat.Beat) error {
 		logp.Info("esbeat can not fetch cluster nodes.")
 		return err
 	}
+	if len(nodeUrls) == 0 {
+		logp.Info("esbeat can not gen urls for cluster nodes.")
+		return err
+	}
 
 	var wg sync.WaitGroup
-	for _, u := range nodeUrls {
-		wg.Add(1)
-		go func(u *url.URL) {
-			defer wg.Add(-1)
-			bt.Polling("nodestats", u, stats.FetchNodeStats)
-			//bt.Polling("node", u, stats.FetchNode)
-		}(u.Url)
+	for id, u := range nodeUrls {
+		host := u.Url
+		if bt.config.Stats.Node {
+			wg.Add(1)
+			go func(host *url.URL) {
+				defer wg.Add(-1)
+				bt.Polling("node", host, stats.FetchNode)
+			}(host)
+		}
+		if bt.config.Stats.Nodestats {
+			wg.Add(1)
+			go func(host *url.URL) {
+				defer wg.Add(-1)
+				bt.Polling("nodestats", host, stats.FetchNodeStats)
+			}(host)
+		}
+		if id == 0 && bt.config.Stats.Clusterhealth {
+			wg.Add(1)
+			go func(host *url.URL) {
+				defer wg.Add(-1)
+				bt.Polling("clusterhealth", host, stats.FetchClusterHealth)
+			}(host)
+		}
+		if id == 0 && bt.config.Stats.Clusterstats {
+			wg.Add(1)
+			go func(host *url.URL) {
+				defer wg.Add(-1)
+				bt.Polling("clusterstats", host, stats.FetchClusterStats)
+			}(host)
+		}
 	}
 
 	wg.Wait()
@@ -79,11 +106,11 @@ func (bt *Esbeat) Stop() {
 	close(bt.done)
 }
 
-type FuncFetchData func(http *helper.HTTP, url *url.URL) (interface{}, error)
+type FuncFetchData func(http *helper.HTTP, host *url.URL) (interface{}, error)
 
 //you should run it in goroutine
-func (bt *Esbeat) Polling(name string, url *url.URL, fetchData FuncFetchData) error {
-	logp.Info("esbeat-%s-%s is running", name, url.String())
+func (bt *Esbeat) Polling(name string, host *url.URL, fetchData FuncFetchData) error {
+	logp.Info("esbeat-%s-%s is running", name, host.String())
 
 	http := helper.NewHTTP(bt.config)
 	ticker := time.NewTicker(bt.config.Period)
@@ -91,19 +118,19 @@ func (bt *Esbeat) Polling(name string, url *url.URL, fetchData FuncFetchData) er
 	for {
 		select {
 		case <-bt.done:
-			logp.Info("esbeat-%s-%s is stopping", name, url.String())
+			logp.Info("esbeat-%s-%s is stopping", name, host.String())
 			return nil
 		case <-ticker.C:
 		}
 
-		body, err := fetchData(http, url)
+		body, err := fetchData(http, host)
 		if err != nil {
 			logp.Err("Error reading cluster node: %v", err)
 		} else {
 			event := common.MapStr{
 				"@timestamp": common.Time(time.Now()),
 				"type":       name,
-				"url":        url.String(),
+				"url":        host.String(),
 				name:         body,
 			}
 			bt.client.PublishEvent(event)

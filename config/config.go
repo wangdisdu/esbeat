@@ -10,9 +10,16 @@ type Config struct {
 	Timeout  time.Duration `config:"timeout"`
 	Protocol string        `config:"protocol"`
 	Hosts    []string      `config:"hosts"`
-	Stats    []string      `config:"stats"`
 	Username string        `config:"username"`
 	Password string        `config:"password"`
+	Stats    ConfigStats   `config:"stats"`
+}
+
+type ConfigStats struct {
+	Node          bool `config:"node"`
+	Nodestats     bool `config:"nodestats"`
+	Clusterhealth bool `config:"clusterhealth"`
+	Clusterstats  bool `config:"clusterstats"`
 }
 
 var DefaultConfig = Config{
@@ -20,5 +27,10 @@ var DefaultConfig = Config{
 	Timeout:  2 * time.Second,
 	Protocol: "http",
 	Hosts:    []string{"localhost:9200"},
-	Stats:    []string{"nodes", "nodes_stats"},
+	Stats: ConfigStats{
+		Node:          true,
+		Nodestats:     true,
+		Clusterhealth: true,
+		Clusterstats:  true,
+	},
 }
