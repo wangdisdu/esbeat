@@ -1,4 +1,4 @@
-package beater
+package helper
 
 import (
 	"encoding/json"

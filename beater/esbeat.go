@@ -3,13 +3,15 @@ package beater
 import (
 	"fmt"
 	"net/url"
+	"sync"
 	"time"
 
 	"github.com/elastic/beats/libbeat/beat"
 	"github.com/elastic/beats/libbeat/common"
 	"github.com/elastic/beats/libbeat/logp"
 	"github.com/elastic/beats/libbeat/publisher"
-
+	"github.com/wangdisdu/esbeat/beater/helper"
+	"github.com/wangdisdu/esbeat/beater/stats"
 	"github.com/wangdisdu/esbeat/config"
 )
 
@@ -50,32 +52,61 @@ func (bt *Esbeat) Run(b *beat.Beat) error {
 	logp.Info("esbeat is running! Hit CTRL-C to stop it.")
 
 	bt.client = b.Publisher.Connect()
-	ticker := time.NewTicker(bt.config.Period)
-	counter := 1
-	for {
-		select {
-		case <-bt.done:
-			return nil
-		case <-ticker.C:
-		}
 
-		_, err := bt.GetNodesHttpAddress()
-		if err != nil {
-			fmt.Println("error:", err)
-		}
-
-		event := common.MapStr{
-			"@timestamp": common.Time(time.Now()),
-			"type":       b.Name,
-			"counter":    counter,
-		}
-		bt.client.PublishEvent(event)
-		logp.Info("Event sent")
-		counter++
+	nodeUrls, err := bt.GetNodeUrls()
+	if err != nil {
+		logp.Info("esbeat can not fetch cluster nodes.")
+		return err
 	}
+
+	var wg sync.WaitGroup
+	for _, u := range nodeUrls {
+		wg.Add(1)
+		go func(u *url.URL) {
+			defer wg.Add(-1)
+			bt.Polling("nodestats", u, stats.FetchNodeStats)
+			//bt.Polling("node", u, stats.FetchNode)
+		}(u.Url)
+	}
+
+	wg.Wait()
+	logp.Info("esbeat is stopping")
+	return nil
 }
 
 func (bt *Esbeat) Stop() {
 	bt.client.Close()
 	close(bt.done)
+}
+
+type FuncFetchData func(http *helper.HTTP, url *url.URL) (interface{}, error)
+
+//you should run it in goroutine
+func (bt *Esbeat) Polling(name string, url *url.URL, fetchData FuncFetchData) error {
+	logp.Info("esbeat-%s-%s is running", name, url.String())
+
+	http := helper.NewHTTP(bt.config)
+	ticker := time.NewTicker(bt.config.Period)
+
+	for {
+		select {
+		case <-bt.done:
+			logp.Info("esbeat-%s-%s is stopping", name, url.String())
+			return nil
+		case <-ticker.C:
+		}
+
+		body, err := fetchData(http, url)
+		if err != nil {
+			logp.Err("Error reading cluster node: %v", err)
+		} else {
+			event := common.MapStr{
+				"@timestamp": common.Time(time.Now()),
+				"type":       name,
+				"url":        url.String(),
+				name:         body,
+			}
+			bt.client.PublishEvent(event)
+		}
+	}
 }
