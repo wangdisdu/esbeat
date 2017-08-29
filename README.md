@@ -2,6 +2,17 @@
 
 Welcome to Esbeat.
 
+Esbeat is used to collect ElasticSearch statistics by rest http api.
+
+- /_cluster/health
+- /_cluster/stats
+- /_nodes/_local
+- /_nodes/_local/stats
+
+Esbeat will find the list of all nodes in elasticsearch cluster automatically when it is started, and fetch data by every node.
+
+Pull Request and Suggestion is most welcome to us. You can add any problems to Issues.
+
 Ensure that this folder is at the following location:
 `${GOPATH}/github.com/wangdisdu/esbeat`
 
